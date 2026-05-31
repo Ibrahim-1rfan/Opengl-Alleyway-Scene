@@ -1,0 +1,11 @@
+Model Information:
+* title:	Neon Open Sign
+* source:	https://sketchfab.com/3d-models/neon-open-sign-2efad97b50f34220b2df92fe99c8a2ad
+* author:	Logan S. (https://sketchfab.com/Logan_S)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Neon Open Sign" (https://sketchfab.com/3d-models/neon-open-sign-2efad97b50f34220b2df92fe99c8a2ad) by Logan S. (https://sketchfab.com/Logan_S) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

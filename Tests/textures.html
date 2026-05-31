@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Texture Prototyper</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        canvas {
+            background-color: #000;
+            border: 1px solid #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            margin-top: 10px;
+        }
+        #controls {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Texture Prototyper (Head-On View)</h2>
+    <div id="controls">
+        <label for="gritSlider">Grittiness: <span id="gritVal">0.5</span></label>
+        <input type="range" id="gritSlider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+
+    <canvas id="glcanvas" width="800" height="800"></canvas>
+
+    <script>
+        const canvas = document.getElementById("glcanvas");
+        const gl = canvas.getContext("webgl2");
+
+        if (!gl) {
+            alert("WebGL 2.0 not supported in this browser.");
+        }
+
+        // ---------------------------------------------------------
+        // 1. SHADERS (Write your math here!)
+        // ---------------------------------------------------------
+                const vertexShaderSource = `#version 300 es
+        layout(location = 0) in vec2 a_position;
+        layout(location = 1) in vec2 a_texCoord;
+
+        out vec2 v_texCoord;
+
+        void main() {
+            gl_Position = vec4(a_position, 0.0, 1.0);
+            v_texCoord = a_texCoord;
+        }`;
+
+        const fragmentShaderSource = `#version 300 es
+        precision mediump float;
+
+        in vec2 v_texCoord;
+        out vec4 outColor;
+
+        // We now have TWO texture inputs!
+        uniform sampler2D u_baseTexture;
+        uniform sampler2D u_wetTexture;
+        uniform float u_blendFactor; // Controlled by your slider
+
+        void main() {
+            // Read the pixel color from both images
+            vec4 baseColor = texture(u_baseTexture, v_texCoord);
+            vec4 wetColor = texture(u_wetTexture, v_texCoord);
+            
+            // mix() smoothly blends from baseColor (0.0) to wetColor (1.0)
+            vec4 finalColor = mix(baseColor, wetColor, u_blendFactor);
+            
+            outColor = finalColor;
+        }`;
+
+        // Helper to compile shaders
+        function compileShader(type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error("Shader Compile Error:", gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        const vShader = compileShader(gl.VERTEX_SHADER, vertexShaderSource);
+        const fShader = compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+        const program = gl.createProgram();
+        gl.attachShader(program, vShader);
+        gl.attachShader(program, fShader);
+        gl.linkProgram(program);
+        gl.useProgram(program);
+
+        // ---------------------------------------------------------
+        // 2. GEOMETRY (A perfect flat square)
+        // ---------------------------------------------------------
+        // Format: X, Y,   U, V
+        const vertices = new Float32Array([
+            -0.8, -0.8,   0.0, 0.0, // Bottom Left
+             0.8, -0.8,   1.0, 0.0, // Bottom Right
+            -0.8,  0.8,   0.0, 1.0, // Top Left
+             0.8,  0.8,   1.0, 1.0  // Top Right
+        ]);
+
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+
+        const vbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        // Position attribute (X, Y)
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+        
+        // Texture Coord attribute (U, V)
+        gl.enableVertexAttribArray(1);
+        gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 16, 8);
+
+        // ---------------------------------------------------------
+        // 3. TEXTURE LOADING
+        // ---------------------------------------------------------
+        
+
+        // Helper function to load textures cleanly
+        function loadTexture(gl, url) {
+            const texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            // Temp pink pixel while loading
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 255, 255]));
+
+            const image = new Image();
+            image.src = url;
+            image.onload = function() {
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+                gl.generateMipmap(gl.TEXTURE_2D);
+                draw(); // Trigger a redraw when the image finally loads
+            };
+            return texture;
+        }
+
+        // Load both images! (Make sure to point the second one to your wet image)
+        const tex1 = loadTexture(gl, "../assets/textures/textures/Wet3.jpg");
+        const tex2 = loadTexture(gl, "../assets/textures/textures/Wet2.jpg"); // UPDATE THIS PATH
+
+        // ---------------------------------------------------------
+        // 4. RENDER LOOP
+        // ---------------------------------------------------------
+        const gritLocation = gl.getUniformLocation(program, "u_grittiness");
+        const slider = document.getElementById("gritSlider");
+        const gritValText = document.getElementById("gritVal");
+
+        slider.addEventListener("input", (e) => {
+            gritValText.innerText = e.target.value;
+            draw(); // Redraw instantly when slider moves
+        });
+
+        const blendLocation = gl.getUniformLocation(program, "u_blendFactor");
+        const baseTexLocation = gl.getUniformLocation(program, "u_baseTexture");
+        const wetTexLocation = gl.getUniformLocation(program, "u_wetTexture");
+
+        function draw() {
+            gl.clearColor(0.1, 0.1, 0.1, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.useProgram(program);
+            
+            // Send the slider value to the shader
+            gl.uniform1f(blendLocation, parseFloat(slider.value));
+
+            // Bind Image 1 to Slot 0
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, tex1);
+            gl.uniform1i(baseTexLocation, 0);
+
+            // Bind Image 2 to Slot 1
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, tex2);
+            gl.uniform1i(wetTexLocation, 1);
+
+            gl.bindVertexArray(vao);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+    </script>
+</body>
+</html>

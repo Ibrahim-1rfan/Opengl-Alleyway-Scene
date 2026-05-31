@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D House Viewer</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <label for="scaleSlider"><strong>Scale House:</strong> <span id="scaleValue">1.0</span>x</label><br>
+        <input type="range" id="scaleSlider" min="0.1" max="5" step="0.1" value="1" style="width: 200px;">
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 1. Core Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.zoomSpeed = 0.6; // Smooth zooming
+
+        // 2. Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 20, 10);
+        scene.add(directionalLight);
+
+        // 3. Load the Models
+        let houseWrapper;
+        const loader = new GLTFLoader();
+
+        // Load House First
+        loader.load(
+            '../assets/models/house_scene.gltf',
+            function (gltf) {
+                const rawModel = gltf.scene;
+                houseWrapper = new THREE.Group();
+                scene.add(houseWrapper);
+
+                const box = new THREE.Box3().setFromObject(rawModel);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+
+                // Center the house
+                rawModel.position.set(-center.x, -center.y, -center.z);
+                houseWrapper.add(rawModel);
+
+                const maxDim = Math.max(size.x, size.y, size.z);
+                
+                // --- CAMERA FIX: Dynamic Limits ---
+                // We base the barrier on the house's actual size (maxDim).
+                // 0.6 multiplier keeps the camera just outside the outer walls.
+                controls.minDistance = maxDim; 
+                controls.maxDistance = maxDim * 2.0;
+                
+                camera.position.set(0, size.y, maxDim * 1.5);
+                controls.target.set(0, 0, 0);
+                controls.update();
+
+                // Now that the house is loaded and centered, attach the sign
+                loadSign(size);
+                // Also load the telephone
+                loadTelephone(size);
+                // And the door
+                loadDoor(size);
+                // And the open sign
+                loadOpen(size);
+                // And the lamp
+                loadLamp(size);
+                loadLamp2(size);
+            },
+            undefined,
+            function (error) { console.error('Error loading house:', error); }
+        );
+
+        // Function to load and attach the sign
+        function loadSign(houseSize) {
+            loader.load(
+                '../assets/models/sign_scene.gltf',
+                function (gltf) {
+                    const signModel = gltf.scene;
+
+                    // --- ADJUST SIGN SCALE HERE ---
+                    // Try 0.01, 0.05, or 0.005 depending on how huge the original file is
+                    const signScale = 0.004; 
+                    signModel.scale.set(signScale, signScale, signScale);
+
+                    // --- ADJUST SIGN POSITION HERE ---
+                    // X: Left wall is negative X. We start at half the house width.
+                    // Y: Up/Down. Tweak this to move it into the rectangular design.
+                    // Z: Forward/Backward along the left wall.
+                    const leftWallX = (houseSize.x / 2) + houseSize.x -  16.9; // +0.2 to avoid clipping inside the wall
+                    const heightY = houseSize.y - 9.0; // Start at half the house height
+                    const depthZ = 0.0;  
+
+                    signModel.position.set(leftWallX, heightY, depthZ);
+
+                    // --- ROTATE SIGN ---
+                    // Rotate 90 degrees (-Math.PI / 2) so the front of the sign faces outward from the left wall
+                    signModel.rotation.y = Math.PI / 2; // Slightly tilt towards the camera for better visibility
+                    // Tilts the top of the sign forward or backward away from the wall
+                    signModel.rotation.x = 0.0;
+                    signModel.rotation.z = -0.05;
+                    // Attach to the house wrapper so scaling the house scales the sign too
+                    houseWrapper.add(signModel);
+                },
+                undefined,
+                function (error) { console.error('Error loading sign:', error); }
+            );
+        }
+
+        // Function to load and attach the telephone
+        function loadTelephone(houseSize) {
+            loader.load(
+                '../assets/models/telephone_scene.gltf', // Your newly uploaded file
+                function (gltf) {
+                    const phoneModel = gltf.scene;
+
+                    // --- 1. REALLY SMALL SCALE ---
+                    const phoneScale = 0.03; // Try 0.005, 0.0005, or 0.0001 if still too big/small
+                    phoneModel.scale.set(phoneScale, phoneScale, phoneScale);
+
+                    // --- 2. CREATE A WRAPPER FOR THE PHONE ---
+                    const phoneGroup = new THREE.Group();
+
+                    // --- 3. POSITION THE PHONE ---
+                    // Example: Putting it on the FRONT wall (near a door perhaps?)
+                   const leftWallX = (houseSize.x / 2) + houseSize.x -  15.9; // +0.2 to avoid clipping inside the wall
+                    const heightY = houseSize.y - 12.5; // Start at half the house height
+                    const depthZ = 2.0; 
+                    
+                    phoneGroup.position.set(leftWallX, heightY, depthZ);
+
+                    // --- 4. RESET PHONE INTERNAL COORDINATES ---
+                    // This forces the phone to forget any weird axes the creator gave it
+                    phoneModel.position.set(0, 0, 0);
+                    // If the phone is facing sideways or backwards internally, fix it here:
+                    // phoneModel.rotation.set(0, Math.PI / 2, 0); // (Uncomment and change if needed)
+
+                    // Put the phone inside our clean wrapper
+                    phoneGroup.add(phoneModel);
+
+                    // --- 5. ROTATE GROUP FLUSH TO WALL ---
+                    // If placing on the FRONT wall: try 0 or Math.PI (180 degrees)
+                    // If placing on the SIDE wall: try Math.PI / 2 or -Math.PI / 2 (90 degrees)
+                    phoneGroup.rotation.y = Math.PI / 2; // Adjust this based on the wall you choose and how the model is oriented
+
+                    // Add the group to the house so it scales and moves with it
+                    houseWrapper.add(phoneGroup);
+                },
+                undefined,
+                function (error) { console.error('Error loading telephone:', error); }
+            );
+        }
+
+        // Function to load and attach the door
+        function loadDoor(houseSize) {
+            loader.load(
+                '../assets/models/door_scene.gltf', // Your door file
+                function (gltf) {
+                    const doorModel = gltf.scene;
+
+                    // --- 1. SET SCALE ---
+                    // Starting with 0.01. Adjust up/down if it looks too small or huge.
+                    const doorScale = 0.018; 
+                    doorModel.scale.set(doorScale, doorScale, doorScale);
+
+                    // --- 2. CREATE A WRAPPER FOR THE DOOR ---
+                    const doorGroup = new THREE.Group();
+
+                    // --- 3. POSITION THE DOOR NEXT TO THE PHONE ---
+                    const leftWallX = (houseSize.x / 2) + houseSize.x -  15.9; // +0.2 to avoid clipping inside the wall
+                    const heightY = houseSize.y - 10.6; // Start at half the house height
+                    const depthZ = 0.0; 
+                    
+                    doorGroup.position.set(leftWallX, heightY, depthZ);
+
+                    // --- 4. RESET INTERNAL COORDINATES ---
+                    // Forcing the door to forget its creator's internal axes
+                    doorModel.position.set(0, 0, 0);
+                    doorModel.rotation.set(0, 0, 0);
+
+                    doorGroup.add(doorModel);
+
+                    // --- 5. ROTATE FLUSH TO WALL ---
+                    // Keeps it facing straight out on the front wall
+                    doorGroup.rotation.y = Math.PI / 2; 
+                    
+                    // (Optional) If the door is facing backward, change to: Math.PI
+                    // (Optional) If the door is facing sideways, change to: Math.PI / 2 or -Math.PI / 2
+
+                    // Attach to the house wrapper
+                    houseWrapper.add(doorGroup);
+                },
+                undefined,
+                function (error) { console.error('Error loading door:', error); }
+            );
+        }
+
+        // Function to load and attach the door
+        function loadOpen(houseSize) {
+            loader.load(
+                '../assets/models/neon_open_scene.gltf', // Your door file
+                function (gltf) {
+                    const openModel = gltf.scene;
+
+                    // --- 1. SET SCALE ---
+                    // Starting with 0.01. Adjust up/down if it looks too small or huge.
+                    const openScale = 0.3; 
+                    openModel.scale.set(openScale, openScale, openScale);
+
+                    // --- 2. CREATE A WRAPPER FOR THE DOOR ---
+                    const openGroup = new THREE.Group();
+
+                    // --- 3. POSITION THE DOOR NEXT TO THE PHONE ---
+                    const leftWallX = (houseSize.x / 2) + houseSize.x -  15.9; // +0.2 to avoid clipping inside the wall
+                    const heightY = houseSize.y - 9.8; // Start at half the house height
+                    const depthZ = 0.0; 
+                    
+                    openGroup.position.set(leftWallX, heightY, depthZ);
+
+                    // --- 4. RESET INTERNAL COORDINATES ---
+                    // Forcing the door to forget its creator's internal axes
+                    openModel.position.set(0, 0, 0);
+                    openModel.rotation.set(0, 0, 0);
+
+                    openGroup.add(openModel);
+
+                    // --- 5. ROTATE FLUSH TO WALL ---
+                    // Keeps it facing straight out on the front wall
+                    openGroup.rotation.y = 0; 
+                    
+                    // (Optional) If the door is facing backward, change to: Math.PI
+                    // (Optional) If the door is facing sideways, change to: Math.PI / 2 or -Math.PI / 2
+
+                    // Attach to the house wrapper
+                    houseWrapper.add(openGroup);
+                },
+                undefined,
+                function (error) { console.error('Error loading open sign:', error); }
+            );
+        }
+
+        // Function to load and attach the lamp
+        function loadLamp(houseSize) {
+            loader.load(
+                '../assets/models/lamp_scene.gltf', // Your lamp file
+                function (gltf) {
+                    const lampModel = gltf.scene;
+
+                    // --- 1. SET SCALE ---
+                    // Starting with 0.01. Adjust up/down if it looks too small or huge.
+                    const lampScale = 1.5; 
+                    lampModel.scale.set(lampScale, lampScale, lampScale);
+
+                    // --- 2. CREATE A WRAPPER FOR THE LAMP ---
+                    const lampGroup = new THREE.Group();
+
+                    // --- 3. POSITION THE LAMP NEXT TO THE PHONE ---
+                    // If your phone is at X = 1.5, put the lamp at X = 0.0 or X = 3.0 to place it side-by-side
+                    const positionX = 5;  // Move left/right along the wall
+                    const positionY = 0.0;  // Placed at 0 so it rests on the ground
+                    const positionZ = (houseSize.z / 2) - 1; // Matches the phone's front wall depth
+                    
+                    lampGroup.position.set(positionX, positionY, positionZ);
+
+                    // --- 4. RESET INTERNAL COORDINATES ---
+                    // Forcing the lamp to forget its creator's internal axes
+                    lampModel.position.set(0, 0, 0);
+                    lampModel.rotation.set(0, 0, 0);
+
+                    lampGroup.add(lampModel);
+
+                    // --- 5. ROTATE FLUSH TO WALL ---
+                    // Keeps it facing straight out on the front wall
+                    lampGroup.rotation.y = 0; 
+                    
+                    // (Optional) If the lamp is facing backward, change to: Math.PI
+                    // (Optional) If the lamp is facing sideways, change to: Math.PI / 2 or -Math.PI / 2
+                    lampGroup.rotation.x = -Math.PI / 2; // Adjust this based on the wall you choose and how the model is oriented
+
+                    // Attach to the house wrapper
+                    houseWrapper.add(lampGroup);
+                },
+                undefined,
+                function (error) { console.error('Error loading lamp:', error); }
+            );
+        }
+
+         // Function to load and attach the lamp
+        function loadLamp2(houseSize) {
+            loader.load(
+                '../assets/models/lamp_scene.gltf', // Your lamp file
+                function (gltf) {
+                    const lampModel = gltf.scene;
+
+                    // --- 1. SET SCALE ---
+                    // Starting with 0.01. Adjust up/down if it looks too small or huge.
+                    const lampScale = 1.5; 
+                    lampModel.scale.set(lampScale, lampScale, lampScale);
+
+                    // --- 2. CREATE A WRAPPER FOR THE LAMP ---
+                    const lampGroup = new THREE.Group();
+
+                    // --- 3. POSITION THE LAMP NEXT TO THE PHONE ---
+                    // If your phone is at X = 1.5, put the lamp at X = 0.0 or X = 3.0 to place it side-by-side
+                    const positionX = -5;  // Move left/right along the wall
+                    const positionY = 0.0;  // Placed at 0 so it rests on the ground
+                    const positionZ = (houseSize.z / 2) - 1; // Matches the phone's front wall depth
+                    
+                    lampGroup.position.set(positionX, positionY, positionZ);
+
+                    // --- 4. RESET INTERNAL COORDINATES ---
+                    // Forcing the lamp to forget its creator's internal axes
+                    lampModel.position.set(0, 0, 0);
+                    lampModel.rotation.set(0, 0, 0);
+
+                    lampGroup.add(lampModel);
+
+                    // --- 5. ROTATE FLUSH TO WALL ---
+                    // Keeps it facing straight out on the front wall
+                    lampGroup.rotation.y = 0; 
+                    
+                    // (Optional) If the lamp is facing backward, change to: Math.PI
+                    // (Optional) If the lamp is facing sideways, change to: Math.PI / 2 or -Math.PI / 2
+                    lampGroup.rotation.x = -Math.PI / 2; // Adjust this based on the wall you choose and how the model is oriented
+
+                    // Attach to the house wrapper
+                    houseWrapper.add(lampGroup);
+                },
+                undefined,
+                function (error) { console.error('Error loading lamp:', error); }
+            );
+        }
+
+        // 4. Scaling Logic (House + Sign together)
+        const slider = document.getElementById('scaleSlider');
+        const scaleValueDisplay = document.getElementById('scaleValue');
+
+        slider.addEventListener('input', (event) => {
+            const scale = parseFloat(event.target.value);
+            scaleValueDisplay.textContent = scale.toFixed(1);
+            if (houseWrapper) {
+                houseWrapper.scale.set(scale, scale, scale);
+            }
+        });
+
+        // 5. Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

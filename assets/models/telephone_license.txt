@@ -1,0 +1,11 @@
+Model Information:
+* title:	Red Telephone (Emergency Phone)
+* source:	https://sketchfab.com/3d-models/red-telephone-emergency-phone-0beb78c11c0f4537a27c53f8e46ddb86
+* author:	TrickyEgor (https://sketchfab.com/trickyegor)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Red Telephone (Emergency Phone)" (https://sketchfab.com/3d-models/red-telephone-emergency-phone-0beb78c11c0f4537a27c53f8e46ddb86) by TrickyEgor (https://sketchfab.com/trickyegor) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

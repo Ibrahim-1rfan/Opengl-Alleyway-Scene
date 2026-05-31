@@ -1,0 +1,11 @@
+Model Information:
+* title:	Neon_lights
+* source:	https://sketchfab.com/3d-models/neon-lights-d01c6d33782c4f059cbb9d8e52c3c852
+* author:	3D Joenish (https://sketchfab.com/3djoenish)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Neon_lights" (https://sketchfab.com/3d-models/neon-lights-d01c6d33782c4f059cbb9d8e52c3c852) by 3D Joenish (https://sketchfab.com/3djoenish) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

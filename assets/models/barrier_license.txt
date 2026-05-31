@@ -1,0 +1,11 @@
+Model Information:
+* title:	Road Barrier Collection
+* source:	https://sketchfab.com/3d-models/road-barrier-collection-bbc824137db540cabcccb0091fcd3222
+* author:	Miguel Teixeira (https://sketchfab.com/miguelteixeira.11)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Road Barrier Collection" (https://sketchfab.com/3d-models/road-barrier-collection-bbc824137db540cabcccb0091fcd3222) by Miguel Teixeira (https://sketchfab.com/miguelteixeira.11) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

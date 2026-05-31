@@ -1,0 +1,11 @@
+Model Information:
+* title:	Victorian lamppost
+* source:	https://sketchfab.com/3d-models/victorian-lamppost-9a486de0f04b49b9aa1095675bc42b15
+* author:	rebeccafuller (https://sketchfab.com/rebeccafuller)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Victorian lamppost" (https://sketchfab.com/3d-models/victorian-lamppost-9a486de0f04b49b9aa1095675bc42b15) by rebeccafuller (https://sketchfab.com/rebeccafuller) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
