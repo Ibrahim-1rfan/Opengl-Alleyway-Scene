@@ -71,7 +71,7 @@ cd ..
 
 ## 📜 Credits & Asset Attribution
 
-A massive thank you to the talented 3D artists and photographers who made their assets available under the Creative Commons Attribution license (CC BY 4.0):
+A massive thank you to the talented 3D artists and photographers who made their assets available under the Creative Commons Attribution license:
 
 ### 3D Models (Sketchfab)
 
