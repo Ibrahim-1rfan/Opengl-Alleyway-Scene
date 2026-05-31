@@ -98,6 +98,5 @@ A massive thank you to the talented 3D artists and photographers who made their 
 * **Magnific:** [Ground Texture Pattern](https://www.magnific.com/free-photo/photo-ground-texture-pattern_391158433.htm) by Mateus Andre
 * **Magnific:** [Ground Texture Pattern](https://www.magnific.com/free-photo/wet-asphalt-background_1234642.htm) by montypeter
 
-```
 
 ```
