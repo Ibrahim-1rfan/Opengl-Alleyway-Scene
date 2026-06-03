@@ -109,7 +109,7 @@ void main() {
     vec2 falloff[5] = vec2[](
         // Lamps 1 & 2: Drastically increased falloff. 
         // This is calibrated to naturally die out at around 13-15 units.
-        vec2(0.35, 0.44), 
+        vec2(0.25, 0.35), 
         vec2(0.35, 0.44), 
         
         // Lamppost: Slightly wider reach than the wall lamps
